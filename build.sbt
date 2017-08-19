@@ -241,6 +241,7 @@ lazy val commonSettings = ReleasePlugin.extraReleaseCommands ++ Seq(
     "org.scalamacros" %% "resetallattrs"  % "1.0.0",
     "org.scalatest"   %%% "scalatest"     % "3.0.3"     % Test,
     "ch.qos.logback"  % "logback-classic" % "1.2.3"     % Test,
+    "com.storm-enroute" %% "scalameter"   % "0.8.2"     % Test,
     "com.google.code.findbugs" % "jsr305" % "3.0.2"     % Provided // just to avoid warnings during compilation
   ),
   EclipseKeys.createSrc := EclipseCreateSrc.Default,
@@ -271,6 +272,8 @@ lazy val commonSettings = ReleasePlugin.extraReleaseCommands ++ Seq(
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   scoverage.ScoverageKeys.coverageMinimum := 96,
   scoverage.ScoverageKeys.coverageFailOnMinimum := false,
+  testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+  logBuffered := false,
   ScalariformKeys.preferences := ScalariformKeys.preferences.value
     .setPreference(AlignParameters, true)
     .setPreference(CompactStringConcatenation, false)
@@ -337,3 +340,4 @@ lazy val commonSettings = ReleasePlugin.extraReleaseCommands ++ Seq(
       </developer>
     </developers>)
 )
+
