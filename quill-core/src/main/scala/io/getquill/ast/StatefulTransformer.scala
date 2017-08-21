@@ -189,6 +189,6 @@ trait StatefulTransformer[T] {
     list.foldLeft((List[R](), this)) {
       case ((values, t), v) =>
         val (vt, vtt) = f(t)(v)
-        (values :+ vt, vtt)
-    }
+        (vt +: values, vtt)
+    } match { case (values, v) => (values.reverse, v) }
 }
