@@ -4,6 +4,8 @@ import io.getquill.ast._
 import io.getquill.util.Interleave
 import io.getquill.util.Messages._
 
+import scala.collection.mutable
+
 object StatementInterpolator {
 
   trait Tokenizer[T] {
@@ -51,48 +53,40 @@ object StatementInterpolator {
 
   implicit class Impl(sc: StringContext) {
 
-    private def flatten(tokens: List[Token]): List[Token] = {
+    private def flatten(tokens: mutable.ListBuffer[Token]) = {
+      val output = mutable.ListBuffer.empty[Token]
+      while (tokens.nonEmpty) {
+        tokens.remove(0) match {
+          case Statement(list) =>
+            tokens.prependAll(list)
 
-      def unestStatements(tokens: List[Token]): List[Token] =
-        tokens.foldLeft(List.empty[Token]) {
-          case (acc, Statement(tokens)) =>
-            acc ++ unestStatements(tokens)
-          case (acc, token) =>
-            acc :+ token
+          case StringToken(s) =>
+            val strings = new mutable.StringBuilder(s)
+            while (tokens.nonEmpty && tokens.head.isInstanceOf[StringToken]) {
+              strings ++= tokens.remove(0).asInstanceOf[StringToken].string
+            }
+            val string = strings.result()
+            if (string.nonEmpty)
+              output += StringToken(string)
+
+          case token =>
+            output += token
         }
-
-      def mergeStringTokens(tokens: List[Token]) =
-        (tokens.foldLeft((List[Token](), StringToken(""): Token)) {
-          case ((acc, a: StringToken), b: StringToken) =>
-            val merged = StringToken(s"${a.string}${b.string}")
-            (acc, merged)
-          case ((acc, a), b) =>
-            (acc :+ a, b)
-        }) match {
-          case (acc, b) => acc :+ b
-        }
-
-      def removeEmptyStringTokens(tokens: List[Token]) =
-        tokens.filterNot(_ == StringToken(""))
-
-      (unestStatements _)
-        .andThen(mergeStringTokens _)
-        .andThen(removeEmptyStringTokens _)
-        .apply(tokens)
+      }
+      output
     }
 
     def stmt(args: Token*): Statement = {
       sc.checkLengths(args)
       val partsIterator = sc.parts.iterator
       val argsIterator = args.iterator
-      val bldr = List.newBuilder[Token]
-      bldr += StringToken(partsIterator.next())
+      val tokens = mutable.ListBuffer.empty[Token]
+      tokens += StringToken(partsIterator.next())
       while (argsIterator.hasNext) {
-        bldr += argsIterator.next
-        bldr += StringToken(partsIterator.next())
+        tokens += argsIterator.next
+        tokens += StringToken(partsIterator.next())
       }
-      val tokens = flatten(bldr.result)
-      Statement(tokens)
+      Statement(flatten(tokens).result())
     }
   }
 }
