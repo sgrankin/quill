@@ -45,17 +45,17 @@ object ReifyStatement {
 
   private def expandLiftings(statement: Statement, emptySetContainsToken: Token => Token) = {
     Statement {
-      statement.tokens.foldLeft(List.empty[Token]) {
-        case (tokens, SetContainsToken(a, op, ScalarLiftToken(lift: ScalarQueryLift))) =>
+      statement.tokens.flatMap {
+        case SetContainsToken(a, op, ScalarLiftToken(lift: ScalarQueryLift)) =>
           lift.value.asInstanceOf[Traversable[Any]].toList match {
-            case Nil => tokens :+ emptySetContainsToken(a)
+            case Nil => List(emptySetContainsToken(a))
             case values =>
               val liftings = values.map(v => ScalarLiftToken(ScalarValueLift(lift.name, v, lift.encoder)))
               val separators = List.fill(liftings.size - 1)(StringToken(", "))
-              (tokens :+ stmt"$a $op (") ++ Interleave(liftings, separators) :+ StringToken(")")
+              stmt"$a $op (" +: Interleave(liftings, separators) :+ StringToken(")")
           }
-        case (tokens, token) =>
-          tokens :+ token
+        case token =>
+          List(token)
       }
     }
   }

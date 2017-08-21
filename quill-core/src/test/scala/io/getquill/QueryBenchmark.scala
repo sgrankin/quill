@@ -12,7 +12,7 @@ object QueryBenchmark extends Benchmark {
     exec.benchRuns -> 5,
     exec.independentSamples -> 5
   ) in {
-      val sizes = Gen.exponential("size")(1, 1000, 10)
+      val sizes = Gen.exponential("size")(1, 10000, 10)
       val queries = sizes.map(mkQuery)
       using(queries) in { q =>
         run(q).string
